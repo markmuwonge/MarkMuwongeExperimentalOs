@@ -1,0 +1,4 @@
+DRIVE_ID:
+	db 0
+DISK_ADDRESS_PACKET:
+	times 16 db 0

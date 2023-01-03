@@ -1,0 +1,2 @@
+A20_LINE_ENABLED_MESSAGE: db 'A20 Line Enabled', 0x0D, 0xA, 0
+A20_LINE_DISABLED_MESSAGE: db 'A20 Line Disabled', 0x0D, 0xA, 0 
