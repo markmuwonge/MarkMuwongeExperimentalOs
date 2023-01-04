@@ -103,8 +103,36 @@ ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP:
 	push dword [edx + 20] ;target program header table entry p_memsz
 	pop dword [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_MEMSZ]
 	
-	;find out how many sectors the target program header table entry segment data spans over & push that value
-	;Method: (p_filesz - 1)/SECTOR SIZE... then add one to the quotient... the quotient holds # sectors 
+	cmp dword [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ], 0 ;check if target program header table entry p_filesz is zero
+	je ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION
+	jmp NON_ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION
+	
+ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION:
+	cmp dword [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_MEMSZ], 0
+	je ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_TRIGGER_NEXT_INTERATION ;no segement data bytes required to be loaded into memory according to target program header table entry p_memsz
+	
+	; put target program header table entry's p_memsz number of 'pad' bytes at address pointed to by target program header table entry's p_vaddr
+	mov eax, [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_VADDR]
+	mov edx, [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_MEMSZ]
+ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION_PAD_LOOP:
+	cmp edx, 0 ;once the number of 'pad' bytes to add reaches 0 jump out of loop ready for dealing with the next program header table entry
+	je ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_TRIGGER_NEXT_INTERATION
+	
+	mov byte [eax], 0x90 ;move a 'pad' byte to address pointed to at by eax
+	
+	inc eax ;eax to hold address of next location of pad byte
+	dec edx ;decrement the number of 'pad' bytes to be added
+	jmp ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION_PAD_LOOP
+	
+NON_ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION:
+	cmp dword [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_MEMSZ], 0
+	je ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_TRIGGER_NEXT_INTERATION ;no segement data bytes required to be loaded into memory according to target program header table entry p_memsz
+	
+	;read in the sector containing the target program header table entry segment data to KERNEL_LOADER_BUFFER_LOAD_LOCATION
+	;then put target program header table entry's p_memsz number of bytes from KERNEL_LOADER_BUFFER_LOAD_LOCATION to at address pointed to by target program header table entry's p_vaddr
+	
+	; find out how many sectors the target program header table entry segment data spans over & push that value
+	; Method: (p_filesz - 1)/SECTOR SIZE... then add one to the quotient... the quotient holds # sectors 
 	mov edx, 0
 	mov eax, [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ]  ;target program header table entry p_filesz
 	dec eax
@@ -112,7 +140,7 @@ ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP:
 	div dword [ebp - 4] ;SECTOR_SIZE
 	add esp, 4
 	
-	;after the division edx:eax holds remainder:quotient
+	; after the division edx:eax holds remainder:quotient
 	inc eax 
 	mov word [TARGET_PROGRAM_HEADER_TABLE_ENTRY_SEGEMENT_SECTOR_COUNT], ax ;#sectors the target program header table entry segment data spans over
 	
@@ -138,15 +166,6 @@ ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP:
 	cmp ax, 0 
 	jl LOAD_KERNEL_LOADER_ELF_FILE_SEGMENTS_RETURN_MINUS_ONE ;error loading sector where the program header table entry segment data  resides into memory
 	
-	mov eax, [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ] ;p_filesz
-	cmp eax, [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_MEMSZ] ;compare p_filesz with p_memsz
-	je CALL_EQUAL_P_FILESZ_AND_P_MEMSZ_ACTION
-	jg CALL_GREATER_P_FILESZ_THAN_P_MEMSZ_ACTION
-	jl CALL_GREATER_P_MEMSZ_THANP_FILESZ_ACTION
-	
-CALL_EQUAL_P_FILESZ_AND_P_MEMSZ_ACTION:
-	; get p_memsz or p_filesz and copy to destination addr
-	
 	; edx holds offset to the program header table entry segment data within the sector it's in. adding KERNEL_LOADER_BUFFER_LOAD_LOCATION makes edx hold the program header table entry segment data starting address
 	add edx, KERNEL_LOADER_BUFFER_LOAD_LOCATION
 	xchg esi, eax ;need esi for movsb instruction so put the KERNEL_LOADER_ELF_FILE_LOGICAL_SECTOR_NUMBER temporarily in eax
@@ -163,13 +182,7 @@ CALL_EQUAL_P_FILESZ_AND_P_MEMSZ_ACTION:
 	
 	xchg esi, eax ;put KERNEL_LOADER_ELF_FILE_LOGICAL_SECTOR_NUMBER back in esi ready for next loop interation
 	xchg ecx, edx ;put number of program header table entries back in ecx ready for next loop interation
-	jmp ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_TRIGGER_NEXT_INTERATION
-CALL_GREATER_P_FILESZ_THAN_P_MEMSZ_ACTION:
-	; from KERNEL_LOADER_BUFFER_LOAD_LOCATION copy p_memsz bytes to destination addr
-	jmp LOAD_KERNEL_LOADER_ELF_FILE_SEGMENTS_RETURN_MINUS_ONE ;for now kernel loader wont be loaded if p_filesz and p_memsz are not equal
-CALL_GREATER_P_MEMSZ_THANP_FILESZ_ACTION:
-	;from KERNEL_LOADER_BUFFER_LOAD_LOCATION copy p_filesz then pad the rest with 0's until total bytes copied to dest addr is p_memsz
-	jmp LOAD_KERNEL_LOADER_ELF_FILE_SEGMENTS_RETURN_MINUS_ONE ;for now kernel loader wont be loaded if p_filesz and p_memsz are not equal
+	
 ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_TRIGGER_NEXT_INTERATION:
 	inc ebx ;increment program header table entry index
 	jmp ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP

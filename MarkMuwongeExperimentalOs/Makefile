@@ -39,7 +39,7 @@ dist/kernel-loader.elf: ${KERNEL_LOADER_C_OBJECT_FILES}
 	move $(subst /,\,${CURDIR}\$@) ${CURDIR}\dist
 
 dist/kernel.elf: ${KERNEL_C_OBJECT_FILES}
-	${i686-elf-ld} -Ttext 0x9000 -e kernel_main $(subst /,\,$(subst 32-bit/code/c/kernel/,${CURDIR}\dist\,$^)) -o $(subst /,\,${CURDIR}\$@)
+	${i686-elf-ld} -Ttext 0x10000 -e kernel_main $(subst /,\,$(subst 32-bit/code/c/kernel/,${CURDIR}\dist\,$^)) -o $(subst /,\,${CURDIR}\$@)
 	
 dist/${BOCHS_DISK_NAME}: dist/main.bin dist/kernel-loader.elf dist/kernel.elf
 	type NUL > $@

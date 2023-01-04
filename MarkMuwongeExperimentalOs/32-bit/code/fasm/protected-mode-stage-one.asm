@@ -6,8 +6,12 @@ PROTECTED_MODE_STAGE_ONE:
 	mov fs, ax
 	mov gs, ax
 	
-	mov eax, [KERNEL_LOADER_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
-	call eax
 	
+	mov eax, [KERNEL_LOADER_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
+	mov bl, [DRIVE_ID]
+	movzx ebx, bl
+	push ebx
+	call eax
+	add esp, 4
 	
 	jmp $
