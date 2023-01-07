@@ -118,7 +118,7 @@ ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION_PAD_LOOP:
 	cmp edx, 0 ;once the number of 'pad' bytes to add reaches 0 jump out of loop ready for dealing with the next program header table entry
 	je ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_TRIGGER_NEXT_INTERATION
 	
-	mov byte [eax], 0x90 ;move a 'pad' byte to address pointed to at by eax
+	mov byte [eax], 0x0 ;move a 'pad' byte to address pointed to at by eax
 	
 	inc eax ;eax to hold address of next location of pad byte
 	dec edx ;decrement the number of 'pad' bytes to be added
@@ -199,15 +199,5 @@ ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_END:
 	pop ax
 	add sp, 32
 	
-	ret
-;;;;;;;;;;;;;E;;;;;;;;;;;;;;;;;
-
-
-;;;;;;;;;;;;;S;;;;;;;;;;;;;;;;;
-LOAD_ELF_PROGRAM_HEADER_TABLE_ENTRY_SEGMENT:
-				; ^read program header entry into memory
-	; parse program header entry and get the offset within the elf file where the segment is
-	; parse program header entry and get the size of the segment
-	; read in segment to memory at the defined address (pos 8d in program header)
 	ret
 ;;;;;;;;;;;;;E;;;;;;;;;;;;;;;;;

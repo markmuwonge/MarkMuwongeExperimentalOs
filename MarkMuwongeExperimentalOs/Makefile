@@ -3,6 +3,7 @@ BOCHS_DISK_NAME = 10MB.img
 BOCHS_DISK_DIR = "C:\Users\mark\Documents\BOCHS\DISK"
 
 KERNEL_LOADER_C_SOURCE_FILES = $(wildcard 32-bit/code/c/kernel-loader/*.c)
+KERNEL_LOADER_C_SOURCE_FILES += $(wildcard 32-bit/code/c/inc/*.c)
 KERNEL_LOADER_C_OBJECT_FILES = $(KERNEL_LOADER_C_SOURCE_FILES:.c=.o) #gets all the c source files with ext '.c' and substrings the ext of c source files to .o
 
 KERNEL_C_SOURCE_FILES = $(wildcard 32-bit/code/c/kernel/*.c)
@@ -13,11 +14,11 @@ SECTOR_SIZE = 512
 BOCHS_DISK_SIZE_FINAL = 10485760
 
 #####################S########################
-all: preclean dist/${BOCHS_DISK_NAME} release
+all: clean dist/${BOCHS_DISK_NAME} release
 #####################E########################
 
 #####################S########################
-preclean:
+clean:
 	if exist dist rmdir /s /Q dist
 	if exist $(BOCHS_DISK_DIR)\${BOCHS_DISK_NAME} del $(BOCHS_DISK_DIR)\${BOCHS_DISK_NAME}
 	mkdir dist
@@ -27,21 +28,14 @@ preclean:
 dist/main.bin: main.asm
 	fasm $< $@
 	
-32-bit/code/c/kernel-loader/%.o: 32-bit/code/c/kernel-loader/%.c
+%.o: %.c
 	tcc -o $@ -c $^ 
 	move $(subst /,\,${CURDIR}\$@) ${CURDIR}\dist
 	
-dist/kernel-loader.elf: ${KERNEL_LOADER_C_OBJECT_FILES}
-	${i686-elf-ld} -Ttext 0x9000 -e kernel_loader_main $(subst /,\,$(subst 32-bit/code/c/kernel-loader/,${CURDIR}\dist\,$^)) -o $(subst /,\,${CURDIR}\$@)
+dist/kernel-loader.elf: ${KERNEL_LOADER_C_OBJECT_FILES} 
+	${i686-elf-ld} -Ttext 0x9000 -e kernel_loader_main $(subst /,\,$(addprefix ${CURDIR}\dist\, $(notdir $^))) -o $(subst /,\,${CURDIR}\$@)
 	
-32-bit/code/c/kernel/%.o: 32-bit/code/c/kernel/%.c
-	tcc -o $@ -c $^ 
-	move $(subst /,\,${CURDIR}\$@) ${CURDIR}\dist
-
-dist/kernel.elf: ${KERNEL_C_OBJECT_FILES}
-	${i686-elf-ld} -Ttext 0x10000 -e kernel_main $(subst /,\,$(subst 32-bit/code/c/kernel/,${CURDIR}\dist\,$^)) -o $(subst /,\,${CURDIR}\$@)
-	
-dist/${BOCHS_DISK_NAME}: dist/main.bin dist/kernel-loader.elf dist/kernel.elf
+dist/${BOCHS_DISK_NAME}: dist/main.bin dist/kernel-loader.elf
 	type NUL > $@
 	
 	@type $(subst /,\,${CURDIR}\$<) >> $(subst /,\,${CURDIR}\$@)
@@ -52,10 +46,6 @@ dist/${BOCHS_DISK_NAME}: dist/main.bin dist/kernel-loader.elf dist/kernel.elf
 	
 	$(call round_file_bytes_to_nearest_sector,$(subst /,\,${CURDIR}\$@))
 	
-	@type $(subst /,\,${CURDIR}\$(word 3,$^)) >> $(subst /,\,${CURDIR}\$@)
-	
-	$(call round_file_bytes_to_nearest_sector,$(subst /,\,${CURDIR}\$@))
-	
 	trunc $(subst /,\,${CURDIR}\$@) ${BOCHS_DISK_SIZE_FINAL}
 #####################E########################
 
@@ -63,7 +53,6 @@ dist/${BOCHS_DISK_NAME}: dist/main.bin dist/kernel-loader.elf dist/kernel.elf
 release: dist/${BOCHS_DISK_NAME}
 	move $(subst /,\,${CURDIR}\$<) $(BOCHS_DISK_DIR)
 	rmdir /s /Q dist
-	
 #####################E########################
 
 #####################S########################
@@ -88,3 +77,4 @@ endef
 # https://stackoverflow.com/questions/38086542/break-long-dependencies-in-makefile-into-several-lines
 # https://superuser.com/questions/1080239/run-powershell-command-from-cmd
 # https://coderwall.com/p/cezf6g/define-your-own-function-in-a-makefile
+# https://stackoverflow.com/questions/59446839/get-filename-from-in-makefile

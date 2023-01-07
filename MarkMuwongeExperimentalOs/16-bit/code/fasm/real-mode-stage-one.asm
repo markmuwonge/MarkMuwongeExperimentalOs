@@ -16,4 +16,5 @@
 	add sp, 8
 	cmp ax, 0
 	jl $
+	
 	jmp REAL_MODE_STAGE_TWO

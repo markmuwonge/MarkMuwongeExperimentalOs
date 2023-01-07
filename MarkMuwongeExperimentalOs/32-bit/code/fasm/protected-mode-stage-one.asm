@@ -7,10 +7,12 @@ PROTECTED_MODE_STAGE_ONE:
 	mov gs, ax
 	
 	
-	mov eax, [KERNEL_LOADER_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
-	mov bl, [DRIVE_ID]
-	movzx ebx, bl
+	
+	mov bx, [HARD_DISK_CONTROLLER_IO_PORT_BASE_ADDRESS]
+	movzx ebx, bx
 	push ebx
+		
+	mov eax, [KERNEL_LOADER_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
 	call eax
 	add esp, 4
 	
