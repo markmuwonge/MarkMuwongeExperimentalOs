@@ -12,7 +12,7 @@ PROTECTED_MODE_STAGE_ONE:
 	movzx ebx, bx
 	push ebx
 		
-	mov eax, [KERNEL_LOADER_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
+	mov eax, [KERNEL_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
 	call eax
 	add esp, 4
 	

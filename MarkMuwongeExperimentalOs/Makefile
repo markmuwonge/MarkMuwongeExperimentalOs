@@ -2,12 +2,11 @@
 BOCHS_DISK_NAME = 10MB.img
 BOCHS_DISK_DIR = "C:\Users\mark\Documents\BOCHS\DISK"
 
-KERNEL_LOADER_C_SOURCE_FILES = $(wildcard 32-bit/code/c/kernel-loader/*.c)
-KERNEL_LOADER_C_SOURCE_FILES += $(wildcard 32-bit/code/c/inc/*.c)
-KERNEL_LOADER_C_OBJECT_FILES = $(KERNEL_LOADER_C_SOURCE_FILES:.c=.o) #gets all the c source files with ext '.c' and substrings the ext of c source files to .o
-
 KERNEL_C_SOURCE_FILES = $(wildcard 32-bit/code/c/kernel/*.c)
-KERNEL_C_OBJECT_FILES = $(KERNEL_C_SOURCE_FILES:.c=.o)
+KERNEL_C_SOURCE_FILES += $(wildcard 32-bit/code/c/kernel/inc/*.c)
+KERNEL_C_OBJECT_FILES = $(KERNEL_C_SOURCE_FILES:.c=.o) #gets all the c source files with ext '.c' and substrings the ext of c source files to .o
+
+
 
 SECTOR_SIZE = 512
 
@@ -32,10 +31,10 @@ dist/main.bin: main.asm
 	tcc -o $@ -c $^ 
 	move $(subst /,\,${CURDIR}\$@) ${CURDIR}\dist
 	
-dist/kernel-loader.elf: ${KERNEL_LOADER_C_OBJECT_FILES} 
-	${i686-elf-ld} -Ttext 0x9000 -e kernel_loader_main $(subst /,\,$(addprefix ${CURDIR}\dist\, $(notdir $^))) -o $(subst /,\,${CURDIR}\$@)
+dist/kernel.elf: ${KERNEL_C_OBJECT_FILES} 
+	${i686-elf-ld} -Ttext 0x9000 -e kernel_main $(subst /,\,$(addprefix ${CURDIR}\dist\, $(notdir $^))) -o $(subst /,\,${CURDIR}\$@)
 	
-dist/${BOCHS_DISK_NAME}: dist/main.bin dist/kernel-loader.elf
+dist/${BOCHS_DISK_NAME}: dist/main.bin dist/kernel.elf
 	type NUL > $@
 	
 	@type $(subst /,\,${CURDIR}\$<) >> $(subst /,\,${CURDIR}\$@)
