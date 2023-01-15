@@ -1,3 +1,5 @@
+;;NOTE - CODE DEPENDANT ON KERNEL ELF FILE STARTING AT A SECTOR BOUNDARY i.e. an address divisible by 512d
+
 ;;;;;;;;;;;;;S;;;;;;;;;;;;;;;;;
 GET_KERNEL_ELF_FILE_LOGICAL_SECTOR_NUMBER:
 	pusha
@@ -49,9 +51,8 @@ LOAD_KERNEL_ELF_FILE_SEGMENTS:
 	mov cx, [KERNEL_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION+44] ;number of program header table entries
 	movzx ecx, cx
 	
-	mov al, [KERNEL_ELF_FILE_LOGICAL_SECTOR_NUMBER]
-	movzx eax, al
-	mov esi, eax ;esi holds the KERNEL_ELF_FILE_LOGICAL_SECTOR_NUMBER 
+	mov si, [KERNEL_ELF_FILE_LOGICAL_SECTOR_NUMBER]
+	movzx esi, si ;esi holds the KERNEL_ELF_FILE_LOGICAL_SECTOR_NUMBER 
 	
 ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP:
 	cmp ecx, ebx ;check whether the number of program header table entries & the current program header table entry index is the same
@@ -125,25 +126,53 @@ ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION_PAD_LOOP:
 	jmp ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION_PAD_LOOP
 	
 NON_ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION:
+	; GOAL -read in the sector containing the target program header table entry segment data to KERNEL_LOADER_BUFFER_LOAD_LOCATION...
+	;...then put target program header table entry's p_memsz number of bytes from KERNEL_LOADER_BUFFER_LOAD_LOCATION to at address pointed to by target program header table entry's p_vaddr
+
 	cmp dword [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_MEMSZ], 0
 	je ELF_FILE_PROGRAM_HEADER_TABLE_ENTRY_LOOP_TRIGGER_NEXT_INTERATION ;no segement data bytes required to be loaded into memory according to target program header table entry p_memsz
 	
-	;read in the sector containing the target program header table entry segment data to KERNEL_LOADER_BUFFER_LOAD_LOCATION
-	;then put target program header table entry's p_memsz number of bytes from KERNEL_LOADER_BUFFER_LOAD_LOCATION to at address pointed to by target program header table entry's p_vaddr
+	cmp dword  [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ], 1 ;a program table entry with segment data (on disk) with a size of 1 byte can't span more than 1 sector (the DATA_SECTOR_SPAN_LOOP routine code doesn't need to run)
+	jne GREATER_THAN_ONE_BYTE_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION
+ONE_BYTE_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION:
+	mov ax, 1
+	jmp SET_TARGET_PROGRAM_HEADER_TABLE_ENTRY_SEGEMENT_SECTOR_COUNT
 	
-	; find out how many sectors the target program header table entry segment data spans over & push that value
-	; Method: (p_filesz - 1)/SECTOR SIZE... then add one to the quotient... the quotient holds # sectors 
+GREATER_THAN_ONE_BYTE_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION:
+	; find out how many sectors the target program header table entry segment data spans (on file) over 
+	push dword [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ] ;counter that decrements (starting at the file size of the target program header table entry segment data) - [ebp - 4]
+	push dword 0 ;offset from p_offset  - [ebp - 8]
+	push dword SECTOR_SIZE  ;- [ebp - 12]
+	push dword 1 ;number of sectors needed to occupy program header table entry segment data - [ebp - 16]
+PROGRAM_HEADER_TABLE_ENTRY_SEGMENT_DATA_SECTOR_SPAN_LOOP:
+	cmp dword [ebp - 4], 0 ;when the counter reaches zero end loop (every byte of the target program header table entry segment data has been accounted for)
+	je PROGRAM_HEADER_TABLE_ENTRY_SEGMENT_DATA_SECTOR_SPAN_LOOP_END
+	
 	mov edx, 0
-	mov eax, [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ]  ;target program header table entry p_filesz
-	dec eax
-	push dword SECTOR_SIZE 
-	div dword [ebp - 4] ;SECTOR_SIZE
-	add esp, 4
 	
-	; after the division edx:eax holds remainder:quotient
-	inc eax 
+	mov eax, [TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_OFFSET] 
+	add eax, [ebp - 8];
+	div dword [ebp - 12]
+	
+	;after the division, edx:eax holds remainder:quotient where a reamainder of 0 indicates the offset eax previously pointed to a byte within the table entry segment data at the start of a sector 
+	
+	cmp edx, 0
+	je INCREMNT_NUMBER_OF_OCCUPYING_SECTORS
+	jmp SKIP_INCREMNT_NUMBER_OF_OCCUPYING_SECTORS
+INCREMNT_NUMBER_OF_OCCUPYING_SECTORS:
+	inc dword [ebp - 16];
+	
+SKIP_INCREMNT_NUMBER_OF_OCCUPYING_SECTORS:	
+	dec dword [ebp - 4]; dec counter
+	inc dword [ebp - 8]; inc offset from p_offset
+	jmp PROGRAM_HEADER_TABLE_ENTRY_SEGMENT_DATA_SECTOR_SPAN_LOOP
+PROGRAM_HEADER_TABLE_ENTRY_SEGMENT_DATA_SECTOR_SPAN_LOOP_END:
+	pop dword eax ;eax holds number of sectors the target program header table entry segment data spans (on file)
+	add esp, 12
+
+SET_TARGET_PROGRAM_HEADER_TABLE_ENTRY_SEGEMENT_SECTOR_COUNT:
 	mov word [TARGET_PROGRAM_HEADER_TABLE_ENTRY_SEGEMENT_SECTOR_COUNT], ax ;#sectors the target program header table entry segment data spans over
-	
+
 	mov edx, 0
 	
 	; after division, edx:eax holds offset:sector where the program header table segment data is located as if the elf file were located starting from offset 0 on disk
@@ -155,7 +184,7 @@ NON_ZERO_SIZE_TARGET_PROGRAM_HEADER_TABLE_ENTRY_P_FILESZ_ACTION:
 	; after addition edx:eax holds the offset:logical sector number of target program header table entry segment data on disk
 	add eax, esi
 	
-	; load sector where the program header table entry segment data resides into memory
+	; load sector/s where the program header table entry segment data resides into memory
 	push ax ;logical sector to start from
 	push 0 ;destination segment start 
 	push KERNEL_LOADER_BUFFER_LOAD_LOCATION ;destination offset start 

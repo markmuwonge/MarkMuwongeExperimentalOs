@@ -8,10 +8,10 @@ DISK_EXTENSIONS_PRESENT:
 	mov ah, 0x41
 	mov bx, 0x55aa
 	int 0x13
-	jc TEST_DISK_ENTENSION_RETURN_ZERO
+	jc TEST_DISK_ENTENSION_RETURN_MINUS_ONE
 	cmp bx, 0xaa55
-	jne TEST_DISK_ENTENSION_RETURN_ZERO
-	;TODO - check that bits 0-2 of cx are all ones. if not jump to TEST_DISK_ENTENSION_RETURN_ZERO 
+	jne TEST_DISK_ENTENSION_RETURN_MINUS_ONE
+	;TODO - check that bits 0-2 of cx are all ones. if not jump to TEST_DISK_ENTENSION_RETURN_MINUS_ONE 
 	
 	;ref the undocumented pc second edition p.g. 595
 	mov ah, 0x48
@@ -19,25 +19,16 @@ DISK_EXTENSIONS_PRESENT:
 	mov word [INTERRUPT_THIRTEEN_FUNCTION_FORTY_EIGHT_RESULT_BUFFER], 30
 	mov si, INTERRUPT_THIRTEEN_FUNCTION_FORTY_EIGHT_RESULT_BUFFER 
 	int 0x13
-	jc TEST_DISK_ENTENSION_RETURN_ZERO
+	jc TEST_DISK_ENTENSION_RETURN_MINUS_ONE
 	
-	;ref Bios Enhanced Disk Drive Specification Version 1-1 p.g. 5
-	mov bx, [INTERRUPT_THIRTEEN_FUNCTION_FORTY_EIGHT_RESULT_BUFFER + 0x1A] ;enhanced disk drive configuration parameters offset
-	mov ax, [INTERRUPT_THIRTEEN_FUNCTION_FORTY_EIGHT_RESULT_BUFFER + 0x1A + 2 ];enhanced disk drive configuration parameters segment
-	;TODO - check bx and ax are both not equal to 0xFFFF
+
 	
-	push fs
-	mov fs, ax
 	
-	mov ax, [fs:bx] ;ax holds drive port base address
-	mov [HARD_DISK_CONTROLLER_IO_PORT_BASE_ADDRESS], ax
-	
-	pop fs
 
 	
 	jmp TEST_DISK_ENTENSION_RETURN_ONE
-TEST_DISK_ENTENSION_RETURN_ZERO:
-	push 0
+TEST_DISK_ENTENSION_RETURN_MINUS_ONE:
+	push -1
 	jmp TEST_DISK_ENTENSION_END
 TEST_DISK_ENTENSION_RETURN_ONE:
 	push 1

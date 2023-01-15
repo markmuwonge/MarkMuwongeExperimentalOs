@@ -6,14 +6,7 @@ PROTECTED_MODE_STAGE_ONE:
 	mov fs, ax
 	mov gs, ax
 	
+	call dword [KERNEL_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
 	
-	
-	mov bx, [HARD_DISK_CONTROLLER_IO_PORT_BASE_ADDRESS]
-	movzx ebx, bx
-	push ebx
-		
-	mov eax, [KERNEL_ELF_FILE_FIRST_SECTOR_LOAD_LOCATION + 24]
-	call eax
-	add esp, 4
 	
 	jmp $

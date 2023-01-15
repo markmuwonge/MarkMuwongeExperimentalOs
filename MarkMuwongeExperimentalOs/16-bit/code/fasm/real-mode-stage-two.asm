@@ -1,8 +1,14 @@
 REAL_MODE_STAGE_TWO:
+
+	call CHECK_GRAPHICS_SUPPORT
+	cmp ax, 0
+	jl $
+	
+	call CLEAR_SCREEN
 	
 	call SET_MEMORY_MAP
-	cmp ax, 0 ;memory map not set
-	je $ 
+	cmp ax, 0 
+	jl $ ;memory map not set
 	
 	call ENABLE_A20_LINE_MAIN
 	
@@ -14,7 +20,6 @@ REAL_MODE_STAGE_TWO:
 	call LOAD_KERNEL_ELF_FILE_SEGMENTS
 	cmp ax, 0
 	jl $
-	
 	
 	lgdt [GLOBAL_DESCRIPTOR_TABLE_DESCRIPTOR]
 	mov eax, cr0

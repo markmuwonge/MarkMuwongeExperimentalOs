@@ -11,6 +11,7 @@ times (SECTOR_SIZE - 2)-($-$$) db 0x0 ;end of logical sector 0
 
 dw BOOT_SECTOR_MAGIC_NUMBER
 include '16-bit/code/fasm/real-mode-stage-two.asm'
+include '16-bit/code/fasm/graphics.asm'
 include '16-bit/code/fasm/memory-map.asm'
 include '16-bit/code/fasm/a20-line.asm'
 include '16-bit/code/fasm/kernel-loader.asm'

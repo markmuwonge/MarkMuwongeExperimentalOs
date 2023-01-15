@@ -3,7 +3,7 @@ BOCHS_DISK_NAME = 10MB.img
 BOCHS_DISK_DIR = "C:\Users\mark\Documents\BOCHS\DISK"
 
 KERNEL_C_SOURCE_FILES = $(wildcard 32-bit/code/c/kernel/*.c)
-KERNEL_C_SOURCE_FILES += $(wildcard 32-bit/code/c/kernel/inc/*.c)
+KERNEL_C_SOURCE_FILES += $(wildcard 32-bit/code/c/kernel/**/*.c)
 KERNEL_C_OBJECT_FILES = $(KERNEL_C_SOURCE_FILES:.c=.o) #gets all the c source files with ext '.c' and substrings the ext of c source files to .o
 
 

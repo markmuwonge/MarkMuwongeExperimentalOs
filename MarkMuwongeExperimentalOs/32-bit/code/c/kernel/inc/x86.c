@@ -1,5 +1,5 @@
 #include "types.h"
- uint8_t io_byte_in(uint16_t port){
+uint8_t io_byte_in(uint16_t port){
 
 	uint8_t data;
 
@@ -38,6 +38,7 @@ void io_in_four_byte_to_address(uint16_t port, void *destination_address, uint32
 		
 	);
 }
+/* REFERENCES */
 //https://www.ibiblio.org/gferg/ldp/GCC-Inline-Assembly-HOWTO.html#ss5.4
 // https://www.codeproject.com/Articles/15971/Using-Inline-Assembly-in-C-C
 // https://stackoverflow.com/questions/26456510/what-does-asm-volatile-do-in-c

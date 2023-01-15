@@ -6,7 +6,7 @@
 	
 	call DISK_EXTENSIONS_PRESENT
 	cmp ax, 0
-	je $
+	jl $
 	
 	push 1 ;logical sector to start from
 	push 0 ;destination segment start 
