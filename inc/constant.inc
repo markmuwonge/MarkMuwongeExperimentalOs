@@ -1,0 +1,1 @@
+ORIGIN_ADDRESS equ 0x7c00

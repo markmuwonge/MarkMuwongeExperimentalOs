@@ -19,7 +19,7 @@ clean:
 
 
 #####################S########################
-dist/bootloader.bin: bootloader/bootloader.asm
+dist/bootloader.bin: bootloader.asm
 	fasm $< $@
 #####################E########################
 
