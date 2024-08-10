@@ -1,0 +1,62 @@
+#REQUIRES  Fasm, https://www1.mager.org/mkdosfs/ 
+
+DISK_NAME = 1440K.img
+FAT_COUNT = 12
+SECTOR_COUNT = 2880
+BOOTLOADER_VALID_MAX_LENGTH = 448
+BOOTLOADER_FAT_12_START_IDX = 62
+
+#####################S########################
+all: clean dist/${DISK_NAME} release
+#####################E########################
+
+
+#####################S########################
+clean:
+	if exist dist rmdir /s /Q dist
+	mkdir dist
+#####################E########################
+
+
+#####################S########################
+dist/bootloader.bin: bootloader/bootloader.asm
+	fasm $< $@
+#####################E########################
+
+
+#####################S########################
+dist/${DISK_NAME}: dist/bootloader.bin
+	mkdosfs -C -F $(FAT_COUNT) dist/$(DISK_NAME) $(SECTOR_COUNT)
+	$(call set_bootloader_bytes, $(subst /,\,${CURDIR}\$@), $(subst /,\,${CURDIR}\$<), $(BOOTLOADER_VALID_MAX_LENGTH), $(BOOTLOADER_FAT_12_START_IDX) )
+#####################E########################
+
+#####################S########################
+release: dist/${DISK_NAME}
+	del $(subst /,\,${CURDIR}\dist/bootloader.bin)
+#####################E########################
+
+
+#####################S########################
+define set_bootloader_bytes
+	powershell -command \
+	$$fat_12_img = [System.IO.File]::ReadAllBytes('$(1)'); \
+	$$bootloader_bin = [System.IO.File]::ReadAllBytes('$(2)'); \
+	$$bootloader_valid_max_length = $(3); \
+	$$bootloader_fat_12_start_idx = $(4); \
+	if ($$bootloader_bin.Count -le $$bootloader_valid_max_length ){ \
+		for ($$i = 0; $$i -lt $$bootloader_bin.Count; $$i++) { \
+			$$fat_12_img[$$i + $$bootloader_fat_12_start_idx ] = $$bootloader_bin[$$i]; \
+		} \
+		[System.IO.File]::WriteAllBytes('$(1)', $$fat_12_img); \
+	}else{ \
+		write-host('Invalid bootloader length'); \
+	}"
+endef
+#####################E#######################
+
+#References
+# https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf
+
+
+
+
