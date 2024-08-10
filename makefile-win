@@ -1,7 +1,7 @@
 #REQUIRES  Fasm, https://www1.mager.org/mkdosfs/ 
 
 DISK_NAME = 1440K.img
-FAT_COUNT = 12
+FAT_TYPE = 12
 SECTOR_COUNT = 2880
 BOOTLOADER_VALID_MAX_LENGTH = 448
 BOOTLOADER_FAT_12_START_IDX = 62
@@ -26,7 +26,7 @@ dist/bootloader.bin: bootloader/bootloader.asm
 
 #####################S########################
 dist/${DISK_NAME}: dist/bootloader.bin
-	mkdosfs -C -F $(FAT_COUNT) dist/$(DISK_NAME) $(SECTOR_COUNT)
+	mkdosfs -C -F $(FAT_TYPE) dist/$(DISK_NAME) $(SECTOR_COUNT)
 	$(call set_bootloader_bytes, $(subst /,\,${CURDIR}\$@), $(subst /,\,${CURDIR}\$<), $(BOOTLOADER_VALID_MAX_LENGTH), $(BOOTLOADER_FAT_12_START_IDX) )
 #####################E########################
 
