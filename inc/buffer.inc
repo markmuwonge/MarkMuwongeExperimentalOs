@@ -1,0 +1,2 @@
+DISK_EXT_PRESENT:
+	db 1
