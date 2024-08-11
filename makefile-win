@@ -1,4 +1,4 @@
-#REQUIRES  Fasm, https://www1.mager.org/mkdosfs/ 
+#REQUIRES  Fasm, https://www1.mager.org/mkdosfs/, imdisk
 
 DISK_NAME = 1440K.img
 FAT_TYPE = 12
@@ -23,23 +23,30 @@ dist/bootloader.bin: bootloader.asm
 	fasm $< $@
 #####################E########################
 
+#####################S########################
+dist/stage_two.bin: 16/stage_two.asm
+	fasm $< $@
+#####################E########################
+
 
 #####################S########################
-dist/${DISK_NAME}: dist/bootloader.bin
+dist/${DISK_NAME}: dist/bootloader.bin dist/stage_two.bin
 	mkdosfs -C -F $(FAT_TYPE) dist/$(DISK_NAME) $(SECTOR_COUNT)
 	$(call set_bootloader_bytes, $(subst /,\,${CURDIR}\$@), $(subst /,\,${CURDIR}\$<), $(BOOTLOADER_VALID_MAX_LENGTH), $(BOOTLOADER_FAT_12_START_IDX) )
+	$(foreach disk_image_file,$(filter-out $<,$^),$(call move_file_to_disk_image,$(subst /,\,${CURDIR}\$@),$(subst /,\,${CURDIR}\$(disk_image_file))))
 #####################E########################
 
 #####################S########################
 release: dist/${DISK_NAME}
-	del $(subst /,\,${CURDIR}\dist/bootloader.bin)
+	powershell -command \
+	"Remove-Item -Path '$(subst /,\,${CURDIR})\dist' -Exclude '${DISK_NAME}' -Recurse -Force -Confirm:$$false;"
 #####################E########################
 
 
 #####################S########################
 define set_bootloader_bytes
 	powershell -command \
-	$$fat_12_img = [System.IO.File]::ReadAllBytes('$(1)'); \
+	"$$fat_12_img = [System.IO.File]::ReadAllBytes('$(1)'); \
 	$$bootloader_bin = [System.IO.File]::ReadAllBytes('$(2)'); \
 	$$bootloader_valid_max_length = $(3); \
 	$$bootloader_fat_12_start_idx = $(4); \
@@ -53,6 +60,19 @@ define set_bootloader_bytes
 	}"
 endef
 #####################E#######################
+
+#####################S########################
+define move_file_to_disk_image
+	powershell -command \
+	"$$random_available_drive_letter = (ls function:[d-z]: -n | ?{ !(test-path $$_) } | random); \
+	imdisk -a -m $$random_available_drive_letter -f '$(1)' -o fd; \
+	move '$(2)' $$random_available_drive_letter; \
+	imdisk -D -m $$random_available_drive_letter; \
+	"
+endef
+#####################E#######################
+
+
 
 #References
 # https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf
