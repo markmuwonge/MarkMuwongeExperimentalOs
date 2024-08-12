@@ -3,7 +3,7 @@ use16
 
 include 'inc/constant.inc'
 
-org ORIGIN_ADDRESS + BOOTLOADER_ORIGIN_OFFSET
+org BOOTLOADER_ORIGIN_ADDRESS
 
 
 
@@ -42,5 +42,14 @@ bootloader_err:
 
 
 include 'inc/buffer.inc'
-include '16/disk_ext_present.asm'
-include '16/correct_loaded_boot_sec.asm'
+include 'inc/16/disk_ext_present.asm'
+include 'inc/16/correct_loaded_boot_sec.asm'
+
+
+;BPB_RsvdSecCnt = 1
+;BPB_NumFATs = 2
+;BPB_FATSz16 = 3
+;BPB_BytsPerSec = 512
+
+;reservered - 1 sector
+;fat - 6 sectors

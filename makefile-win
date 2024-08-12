@@ -1,45 +1,54 @@
 #REQUIRES  Fasm, https://www1.mager.org/mkdosfs/, imdisk
 
+BOOTLOADER_SOURCE_NAME = bootloader.asm
+DISK_DIR = dist
 DISK_NAME = 1440K.img
 FAT_TYPE = 12
 SECTOR_COUNT = 2880
 BOOTLOADER_VALID_MAX_LENGTH = 448
 BOOTLOADER_FAT_12_START_IDX = 62
 
+ON_DISK_16_BIT_SOURCE_FILES = $(wildcard 16/*.asm)
+ON_DISK_16_BIT_BIN_FILES = $(ON_DISK_16_BIT_SOURCE_FILES:.asm=.bin)
+
+
+
+
+
 #####################S########################
-all: clean dist/${DISK_NAME} release
+all: clean ${DISK_DIR}/${DISK_NAME} release
 #####################E########################
 
 
 #####################S########################
 clean:
-	if exist dist rmdir /s /Q dist
-	mkdir dist
+	if exist ${DISK_DIR} rmdir /s /Q ${DISK_DIR}
+	mkdir ${DISK_DIR}
 #####################E########################
 
-
 #####################S########################
-dist/bootloader.bin: bootloader.asm
+${DISK_DIR}/$(BOOTLOADER_SOURCE_NAME:.asm=.bin): ${BOOTLOADER_SOURCE_NAME}
 	fasm $< $@
 #####################E########################
 
 #####################S########################
-dist/stage_two.bin: 16/stage_two.asm
+${DISK_DIR}/%.bin: ${ON_DISK_16_BIT_SOURCE_FILES}
 	fasm $< $@
+
 #####################E########################
 
 
 #####################S########################
-dist/${DISK_NAME}: dist/bootloader.bin dist/stage_two.bin
-	mkdosfs -C -F $(FAT_TYPE) dist/$(DISK_NAME) $(SECTOR_COUNT)
+${DISK_DIR}/${DISK_NAME}: ${DISK_DIR}/$(BOOTLOADER_SOURCE_NAME:.asm=.bin) $(addprefix ${DISK_DIR}/,$(notdir ${ON_DISK_16_BIT_BIN_FILES}))
+	mkdosfs -C -F $(FAT_TYPE) ${DISK_DIR}/$(DISK_NAME) $(SECTOR_COUNT)
 	$(call set_bootloader_bytes, $(subst /,\,${CURDIR}\$@), $(subst /,\,${CURDIR}\$<), $(BOOTLOADER_VALID_MAX_LENGTH), $(BOOTLOADER_FAT_12_START_IDX) )
-	$(foreach disk_image_file,$(filter-out $<,$^),$(call move_file_to_disk_image,$(subst /,\,${CURDIR}\$@),$(subst /,\,${CURDIR}\$(disk_image_file))))
+	$(call move_files_to_disk_image,$(subst /,\,${CURDIR}\$@),$(addprefix ${CURDIR}/,$(filter-out $<,$^)))
 #####################E########################
 
 #####################S########################
-release: dist/${DISK_NAME}
+release: ${DISK_DIR}/${DISK_NAME}
 	powershell -command \
-	"Remove-Item -Path '$(subst /,\,${CURDIR})\dist' -Exclude '${DISK_NAME}' -Recurse -Force -Confirm:$$false;"
+	"Remove-Item -Path '$(subst /,\,${CURDIR})\${DISK_DIR}' -Exclude '${DISK_NAME}' -Recurse -Force -Confirm:$$false;"
 #####################E########################
 
 
@@ -62,15 +71,19 @@ endef
 #####################E#######################
 
 #####################S########################
-define move_file_to_disk_image
-	powershell -command \
-	"$$random_available_drive_letter = (ls function:[d-z]: -n | ?{ !(test-path $$_) } | random); \
-	imdisk -a -m $$random_available_drive_letter -f '$(1)' -o fd; \
-	move '$(2)' $$random_available_drive_letter; \
-	imdisk -D -m $$random_available_drive_letter; \
-	"
+define move_files_to_disk_image
+	 powershell -command \
+	 "$$file_list_string = '$(2)'; \
+	 $$file_list_arr = $$file_list_string.Split(' '); \
+	 $$random_available_drive_letter = (ls function:[d-z]: -n | ?{ !(test-path $$_) } | random); \
+	 imdisk -a -m $$random_available_drive_letter -f '$(1)' -o fd; \
+	 for ($$i = 0; $$i -lt $$file_list_arr.Count; $$i++) { \
+	 	move $$file_list_arr[$$i] $$random_available_drive_letter;\
+	 }\
+	 imdisk -D -m $$random_available_drive_letter; \
+	 "
 endef
-#####################E#######################
+#####################E########################
 
 
 
