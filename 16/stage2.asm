@@ -3,7 +3,7 @@ use16
 
 include 'inc/constant.inc'
 
-org STAGE_TWO_ORIGIN_ADDRESS
+
 
 stage_two_main:
 	nop
@@ -12,4 +12,5 @@ stage_two_main:
 	nop
 	nop
 	nop
-	jmp $
+	hlt
+	jmp stage_two_main

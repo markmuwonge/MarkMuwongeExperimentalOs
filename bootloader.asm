@@ -19,14 +19,17 @@ init:
 	jmp 0000:main
 
 main:
+	;dx holds drive number
 	push dx ;REF: pg.295 The Undocumented PC Second Edition Frankvan_Gilluwe
 	call disk_ext_present
 	add sp, 2
 	cmp ax, 0
 	jz no_disk_ext
 	jmp post_disk_ext_check
+
 no_disk_ext:
 	mov [DISK_EXT_PRESENT], al
+
 post_disk_ext_check:
 	push dx
 	call correct_loaded_boot_sec
@@ -34,22 +37,20 @@ post_disk_ext_check:
 	cmp ax, 0
 	jz bootloader_err
 
-;TODO: load in root dir
+	push dx
+	call load_stage_two
+	add sp, 2
+	cmp ax, 0
+	jz bootloader_err
+	;jump to stage2
 
 
 bootloader_err:
-	jmp $
+	hlt
+	jmp bootloader_err
 
 
 include 'inc/buffer.inc'
 include 'inc/16/disk_ext_present.asm'
 include 'inc/16/correct_loaded_boot_sec.asm'
-
-
-;BPB_RsvdSecCnt = 1
-;BPB_NumFATs = 2
-;BPB_FATSz16 = 3
-;BPB_BytsPerSec = 512
-
-;reservered - 1 sector
-;fat - 6 sectors
+include 'inc/16/load_stage_two.asm'
