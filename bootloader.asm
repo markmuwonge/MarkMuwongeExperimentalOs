@@ -8,6 +8,7 @@ org BOOTLOADER_ORIGIN_ADDRESS
 
 
 init:
+	sti ;disable hardware interrupts
 	mov ax, 0
 	mov ds, ax
 	mov es, ax
@@ -42,6 +43,7 @@ post_disk_ext_check:
 	add sp, 2
 	cmp ax, 0
 	jz bootloader_err
+
 	;jump to stage2
 
 
