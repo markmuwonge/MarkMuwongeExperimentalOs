@@ -1,5 +1,6 @@
 #REQUIRES  Fasm, https://www1.mager.org/mkdosfs/, imdisk
 
+16_BIT_DIR = 16
 BOOTLOADER_SOURCE_NAME = bootloader.asm
 DISK_DIR = dist
 DISK_NAME = 1440K.img
@@ -8,9 +9,8 @@ SECTOR_COUNT = 2880
 BOOTLOADER_VALID_MAX_LENGTH = 448
 BOOTLOADER_FAT_12_START_IDX = 62
 
-ON_DISK_16_BIT_SOURCE_FILES = $(wildcard 16/*.asm)
+ON_DISK_16_BIT_SOURCE_FILES = $(wildcard ${16_BIT_DIR}/*.asm)
 ON_DISK_16_BIT_BIN_FILES = $(ON_DISK_16_BIT_SOURCE_FILES:.asm=.bin)
-
 
 
 
@@ -32,7 +32,7 @@ ${DISK_DIR}/$(BOOTLOADER_SOURCE_NAME:.asm=.bin): ${BOOTLOADER_SOURCE_NAME}
 #####################E########################
 
 #####################S########################
-${DISK_DIR}/%.bin: ${ON_DISK_16_BIT_SOURCE_FILES}
+${DISK_DIR}/%.bin: ${16_BIT_DIR}/%.asm
 	fasm $< $@
 
 #####################E########################
