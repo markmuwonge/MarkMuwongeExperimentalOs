@@ -43,7 +43,7 @@ root_dir_file_name_not_found:
 
 root_dir_file_name_found:
 	;check fat (optional) - really only need to load first sector of stage 2, if it spans more than 1 sector let stage 2 load it
-	;get stage2 sector
+	;get stage2 sector ;<- pass in start clster
 	;load stage 2 sector at
 
 

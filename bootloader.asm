@@ -21,12 +21,12 @@ init:
 
 main:
 	;dx holds drive number
-	push dx ;REF: pg.295 The Undocumented PC Second Edition Frankvan_Gilluwe
-	call disk_ext_present
-	pop dx
-	cmp ax, 1
-	jz post_disk_ext_check
-	jmp bootloader_err
+	;push dx ;REF: pg.295 The Undocumented PC Second Edition Frankvan_Gilluwe
+	;call disk_ext_present
+	;pop dx
+	;cmp ax, 1
+	;jz post_disk_ext_check
+	;jmp bootloader_err
 
 post_disk_ext_check:
 	push dx
@@ -50,6 +50,6 @@ bootloader_err:
 
 
 include 'inc/buffer.inc'
-include 'inc/16/disk_ext_present.asm'
+;include 'inc/16/disk_ext_present.asm'
 include 'inc/16/correct_loaded_boot_sec.asm'
 include 'inc/16/load_stage_two.asm'
