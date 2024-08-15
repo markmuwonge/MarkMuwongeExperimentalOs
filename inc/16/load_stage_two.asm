@@ -2,32 +2,18 @@ load_stage_two:
 	pusha
 	mov bp, sp
 
-	;not utlizing disk ext
-	cmp BYTE [DISK_EXT_PRESENT], 1
-	jz load_stage_two_err
+	call set_root_directory_sector_number
+	call set_root_directory_size_in_sectors
+	
 
-	; get number of reserved sectors starting from sector 0
-	mov bx, [ORIGIN_ADDRESS + BPB_RsvdSecCnt_IDX]
+load_stage_two_find_loop:
+	;loop from sector 'root_dir_sector_number' to (('root_dir_sector_number' + 'root_dir_sector_size_in_sectors') - 1) to find stage 2
+	movzx ax, [ROOT_DIR_SECTOR_NUMBER]
+	movzx bx, [ROOT_DIR_SIZE_IN_SECTORS]
+	cmp ax, bx
+	jz load_stage_two_err ;couldn't find stage_two
 
-	; get number of fats
-	movzx ax, [ORIGIN_ADDRESS+BPB_NumFATs_IDX]
-
-	; BPB_NumFATs * BPB_FATSz16 = total fat sectors in dx:ax
-	;only considering ax - total fat sectors wont be greater than 65535
-	mul WORD [ORIGIN_ADDRESS+BPB_FATSz16_IDX]
-
-	;root dir sector number in bx
-	add bx, ax
-	 
-
-	;get root directory size in sectors (ax)
-	mov ax, [ORIGIN_ADDRESS+BPB_RootEntCnt_IDX]
-	mov cx, FAT12_ROOT_DIR_ENTRY_BYTE_SIE
-	mul cx
-	;will not produce remainder. Ref pg.8 Microsoft FAT Specification August 30 2005 (BPB_RootEntCnt)
-	div WORD [ORIGIN_ADDRESS+BPB_BytsPerSec_IDX]
-
-	push  bx
+	push  ax
 	call lba_to_chs
 	add sp, 2
 
@@ -43,7 +29,22 @@ load_stage_two:
 	jz load_stage_two_err
 
 	;find stage2.bin in root dir
-	
+	push WORD SECTOR_LOADING_BUFFER_ADDRESS
+	push WORD load_stage_two_taget_file_name
+	call file_exists_in_root_directory_sector
+	add sp, 4
+	cmp ax, 0
+	jz root_dir_file_name_not_found
+	jmp root_dir_file_name_found
+
+root_dir_file_name_not_found:
+	inc BYTE [ROOT_DIR_SECTOR_NUMBER]
+	jmp load_stage_two_find_loop
+
+root_dir_file_name_found:
+	;check fat (optional) - really only need to load first sector of stage 2, if it spans more than 1 sector let stage 2 load it
+	;get stage2 sector
+	;load stage 2 sector at
 
 
 	popa
@@ -51,15 +52,18 @@ load_stage_two:
 	jmp load_stage_two_end
 load_stage_two_err:
 	popa
-	mov ax, 0
+	xor ax, ax
 
 
 load_stage_two_end:
 	ret
 
-
+include 'inc/16/set_root_directory_sector_number.asm'
+include 'inc/16/set_root_directory_size_in_sectors.asm'
 include 'inc/16/lba_to_chs.asm'
 include 'inc/16/load_sectors_chs.asm'
+include 'inc/16/file_exists_in_root_directory_sector.asm'
 
 
 load_stage_two_taget_file_name: db 'STAGE2  BIN'
+

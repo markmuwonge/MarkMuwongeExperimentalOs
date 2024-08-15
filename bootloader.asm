@@ -9,7 +9,7 @@ org BOOTLOADER_ORIGIN_ADDRESS
 
 init:
 	sti ;disable hardware interrupts
-	mov ax, 0
+	xor ax, ax
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
@@ -23,24 +23,21 @@ main:
 	;dx holds drive number
 	push dx ;REF: pg.295 The Undocumented PC Second Edition Frankvan_Gilluwe
 	call disk_ext_present
-	add sp, 2
-	cmp ax, 0
-	jz no_disk_ext
-	jmp post_disk_ext_check
-
-no_disk_ext:
-	mov [DISK_EXT_PRESENT], al
+	pop dx
+	cmp ax, 1
+	jz post_disk_ext_check
+	jmp bootloader_err
 
 post_disk_ext_check:
 	push dx
 	call correct_loaded_boot_sec
-	add sp, 2
+	pop dx
 	cmp ax, 0
 	jz bootloader_err
 
 	push dx
 	call load_stage_two
-	add sp, 2
+	pop dx
 	cmp ax, 0
 	jz bootloader_err
 

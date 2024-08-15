@@ -7,10 +7,8 @@ disk_ext_present:
    mov bx, 0x55aa
    int 0x13
    popa
-   jc disk_ext_present_n
-   mov ax, 1
-   jmp disk_ext_present_end
-disk_ext_present_n:
-	mov ax, 0
+   xor ax, ax
+   jc disk_ext_present_end
+   inc ax
 disk_ext_present_end:
 	ret
