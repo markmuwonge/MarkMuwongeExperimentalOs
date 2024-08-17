@@ -1,7 +1,7 @@
 file_exists_in_root_directory_sector:
 	pusha
 	mov bp, sp
-	push WORD 0 ;count of entries seen
+	push WORD 0 ;count of entries seen (bp - 2)
 
 	mov si, [bp + 16 + 2] ;filename
 	mov di, [bp + 16 + 4] ;sector
@@ -34,7 +34,10 @@ file_exists_in_root_directory_sector_popa:
 
 	popa
 	jnc file_exists_in_root_directory_sector_no_match
-	mov ax, 1 ; TODO - return sector offset instead of just one!!!!!!!!!!!!!!!
+	sub sp, 18
+	pop ax ;
+	dec ax ; ax holds root dir entry index
+	add sp, 16
 	jmp file_exists_in_root_directory_sector_end
 file_exists_in_root_directory_sector_no_match:
 	xor ax, ax

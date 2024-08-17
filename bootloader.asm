@@ -20,36 +20,20 @@ init:
 	jmp 0000:main
 
 main:
-	;dx holds drive number
-	;push dx ;REF: pg.295 The Undocumented PC Second Edition Frankvan_Gilluwe
-	;call disk_ext_present
-	;pop dx
-	;cmp ax, 1
-	;jz post_disk_ext_check
-	;jmp bootloader_err
-
-post_disk_ext_check:
 	push dx
 	call correct_loaded_boot_sec
-	pop dx
-	cmp ax, 0
-	jz bootloader_err
-
-	push dx
+	
 	call load_stage_two
 	pop dx
-	cmp ax, 0
-	jz bootloader_err
 
-	;jump to stage2
+	jmp STAGE2_LOAD_ADDRESS
 
 
-bootloader_err:
+halt:
 	hlt
-	jmp bootloader_err
+	jmp halt
 
 
 include 'inc/buffer.inc'
-;include 'inc/16/disk_ext_present.asm'
 include 'inc/16/correct_loaded_boot_sec.asm'
 include 'inc/16/load_stage_two.asm'

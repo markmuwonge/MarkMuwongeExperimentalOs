@@ -25,17 +25,16 @@ load_sectors_chs_routine:
 	mov bx, [bp + 16 + 6] ;data buffer address
 
 	int 0x13
-	jc load_sectors_chs_err
+	jc load_sectors_chs_half_err
 	
 	add sp, 2
 	popa
-	mov ax, 1
-	jmp load_sectors_chs_err_end
+	jmp load_sectors_chs_end
 	
-load_sectors_chs_err:
+load_sectors_chs_half_err:
 	inc WORD [bp - 2]
 	cmp WORD [bp - 2], 3
-	jz load_sectors_chs_set_err_ret_val
+	jz load_sectors_chs_err
 
 	;reset drive REF: Ralf Brown's Interrupt List interrupt 13, ah=2
 	push ax
@@ -45,13 +44,13 @@ load_sectors_chs_err:
 	int 0x13
 	pop dx
 	pop ax
-	jc load_sectors_chs_set_err_ret_val
+	jc load_sectors_chs_err
 	jmp load_sectors_chs_routine
 
-load_sectors_chs_set_err_ret_val:
-	add sp, 2
-	popa
-	xor ax, ax
+
 	
-load_sectors_chs_err_end:
+load_sectors_chs_end:
 	ret
+
+load_sectors_chs_err:
+	jmp $

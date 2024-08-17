@@ -8,7 +8,7 @@ correct_loaded_boot_sec:
 	push es
 	int 0x13 ; REF: pg. 496, 504 The Undocumented PC Second Edition Frankvan_Gilluwe, Ralph Brown's interrupt list
 	pop es
-	jc _popa ;err
+	jc correct_loaded_boot_sec_err
 
 	and cl, 00111111b; sector per track
 	xor ch, ch ; FAT12 BPB_SecPerTrk value is 2 bytes
@@ -18,13 +18,11 @@ correct_loaded_boot_sec:
 	mov dl, dh
 	xor dh, dh
 	mov  [ORIGIN_ADDRESS + BPB_NumHeads_IDX], dx
-_popa:
+
 	popa
-	xor ax, ax
-	jc correct_loaded_boot_sec_end
-	inc ax
-correct_loaded_boot_sec_end:
 	ret
 
+correct_loaded_boot_sec_err:
+	jmp $
 
 
